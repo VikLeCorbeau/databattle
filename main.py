@@ -1,23 +1,19 @@
 import os
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+
+import cv2 as cv
+import numpy as np
+import matplotlib.pyplot as plt
+
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 # Creation du dataset à partir d'images des patterns figurants sur les pdf
-img_height = 28
-img_width = 28
-batch_size = 2
-
-model = keras.Sequential([
-    layers.Input((28, 28, 1)),
-    layers.Conv2D(16, 3, padding='same'),
-    layers.Conv2D(32, 3, padding='same'),
-    layers.MaxPooling2D(),
-    layers.Flatten(),
-    layers.Dense(10),
-])
+img_height = 32
+img_width = 66
+batch_size = 22
 
 ds_train = tf.keras.preprocessing.image_dataset_from_directory(
     'dataset/',
@@ -45,24 +41,27 @@ ds_validation = tf.keras.preprocessing.image_dataset_from_directory(
     subset = 'validation',
 )
 
-def augment(x, y):
-    image = tf.image.random_brightness(x, max_delta=0.05)
-    return image, y
+model = tf.keras.models.Sequential()
+model.add(tf.keras.layers.Flatten(input_shape=(img_height, img_width)))
+model.add(tf.keras.layers.Dense(units=128, activation=tf.nn.relu))
+model.add(tf.keras.layers.Dense(units=256, activation=tf.nn.relu))
+model.add(tf.keras.layers.Dense(units=batch_size, activation=tf.nn.softmax))
 
-ds_train = ds_train.map(augment)
+model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+model.fit(ds_train, epochs=30)
 
-# Custom Loops
-for epochs in range(10):
-    for x, y in ds_train:
-        #train here
-        pass
+loss, accuracy = model.evaluate(ds_train)
+print(accuracy)
+print(loss)
 
-model.compile(
-    optimizer=keras.optimizers.Adam(),
-    loss=[
-        keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-    ],
-    metrics=["accuracy"],
-)
+model.save('ground.model')
 
-model.fit(ds_train, epochs=10, verbose=2)
+for x in range(1, 6):
+    img = cv.imread(f'{x}.jpg')[:,:,0]
+    img = np.invert(np.array([img]))
+
+    prediction = model.predict(img)
+    print(f'Surement : {np.argmax(prediction)}')
+
+    plt.imshow(img[0], cmap= plt.cm.binary)
+    plt.show()
