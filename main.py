@@ -61,7 +61,8 @@ for x in range(1, 6):
     img = np.invert(np.array([img]))
 
     prediction = model.predict(img)
-    print(f'Surement : {np.argmax(prediction)}')
+    print(prediction)
+    # print(f'Surement : {np.argmax(prediction)}')
 
     plt.imshow(img[0], cmap= plt.cm.binary)
     plt.show()
